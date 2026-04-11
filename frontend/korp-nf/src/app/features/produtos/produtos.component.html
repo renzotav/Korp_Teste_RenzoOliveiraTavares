@@ -1,0 +1,78 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>{{ editando ? 'Editar Produto' : 'Novo Produto' }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="salvar()" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px">
+      <mat-form-field>
+        <mat-label>Código</mat-label>
+        <input matInput formControlName="codigo" />
+        <mat-error *ngIf="form.get('codigo')?.invalid">Código obrigatório</mat-error>
+      </mat-form-field>
+
+      <mat-form-field style="flex: 1; min-width: 200px">
+        <mat-label>Descrição</mat-label>
+        <input matInput formControlName="descricao" />
+        <mat-error *ngIf="form.get('descricao')?.invalid">Descrição obrigatória</mat-error>
+      </mat-form-field>
+
+      <mat-form-field style="width: 120px">
+        <mat-label>Saldo</mat-label>
+        <input matInput type="number" formControlName="saldo" />
+        <mat-error *ngIf="form.get('saldo')?.invalid">Saldo inválido</mat-error>
+      </mat-form-field>
+
+      <div style="display: flex; align-items: center; gap: 8px">
+        <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+          {{ editando ? 'Atualizar' : 'Cadastrar' }}
+        </button>
+        <button mat-button type="button" *ngIf="editando" (click)="cancelarEdicao()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-card style="margin-top: 24px">
+  <mat-card-header>
+    <mat-card-title>Produtos Cadastrados</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div *ngIf="carregando" style="display: flex; justify-content: center; padding: 32px">
+      <mat-spinner diameter="40" />
+    </div>
+
+    <table mat-table [dataSource]="produtos" *ngIf="!carregando" style="width: 100%">
+      <ng-container matColumnDef="codigo">
+        <th mat-header-cell *matHeaderCellDef>Código</th>
+        <td mat-cell *matCellDef="let p">{{ p.codigo }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="descricao">
+        <th mat-header-cell *matHeaderCellDef>Descrição</th>
+        <td mat-cell *matCellDef="let p">{{ p.descricao }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="saldo">
+        <th mat-header-cell *matHeaderCellDef>Saldo</th>
+        <td mat-cell *matCellDef="let p">{{ p.saldo }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef>Ações</th>
+        <td mat-cell *matCellDef="let p">
+          <button mat-icon-button color="primary" (click)="editar(p)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deletar(p.id!)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

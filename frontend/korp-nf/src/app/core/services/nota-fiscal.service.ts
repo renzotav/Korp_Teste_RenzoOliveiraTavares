@@ -7,7 +7,7 @@ import { NotaFiscal } from '../models/nota-fiscal.model';
   providedIn: 'root'
 })
 export class NotaFiscalService {
-  private apiUrl = 'http://localhost:5433/api/notasfiscais';
+  private apiUrl = 'http://localhost:5199/api/notasfiscais';
 
   constructor(private http: HttpClient) {}
 
