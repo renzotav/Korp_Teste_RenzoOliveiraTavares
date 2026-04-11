@@ -122,20 +122,32 @@ export class NotasFiscaisComponent implements OnInit {
   }
 
   imprimir(id: number): void {
-    this.imprimindo = id;
-    this.notaService.imprimir(id).subscribe({
-      next: () => {
-        this.snackBar.open('Nota impressa e fechada!', 'Fechar', { duration: 3000 });
-        this.imprimindo = null;
-        this.carregarNotas();
-      },
-      error: (err) => {
-        const mensagem = err.error?.mensagem ?? 'Erro ao imprimir nota';
-        this.snackBar.open(mensagem, 'Fechar', { duration: 3000 });
-        this.imprimindo = null;
+  this.imprimindo = id;
+  this.notaService.imprimir(id).subscribe({
+    next: () => {
+      this.snackBar.open('Nota impressa e fechada!', 'Fechar', { duration: 3000 });
+      this.imprimindo = null;
+      this.carregarNotas();
+    },
+    error: (err) => {
+      this.imprimindo = null;
+
+      if (err.status === 503) {
+        this.snackBar.open(
+          err.error?.mensagem ?? 'Serviço de estoque indisponível',
+          'Fechar',
+          { duration: 0, panelClass: ['snack-erro'] }
+        );
+      } else {
+        this.snackBar.open(
+          err.error?.mensagem ?? 'Erro ao imprimir nota',
+          'Fechar',
+          { duration: 4000, panelClass: ['snack-aviso'] }
+        );
       }
-    });
-  }
+    }
+  });
+}
 
   deletar(id: number): void {
     this.notaService.deletar(id).subscribe({

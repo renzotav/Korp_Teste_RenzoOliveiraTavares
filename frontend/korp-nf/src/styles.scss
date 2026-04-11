@@ -2,3 +2,14 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+
+.snack-erro .mdc-snackbar__surface {
+  background-color: #c62828 !important;
+  color: white !important;
+}
+
+.snack-aviso .mdc-snackbar__surface {
+  background-color: #e65100 !important;
+  color: white !important;
+}

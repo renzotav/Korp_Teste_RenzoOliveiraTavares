@@ -56,31 +56,37 @@ public class NotasFiscaisController : ControllerBase
     }
 
     [HttpPost("{id}/imprimir")]
-    public async Task<IActionResult> Imprimir(int id)
+public async Task<IActionResult> Imprimir(int id)
+{
+    var nota = await _context.NotasFiscais
+        .Include(n => n.Itens)
+        .FirstOrDefaultAsync(n => n.Id == id);
+
+    if (nota == null)
+        return NotFound(new { mensagem = "Nota fiscal não encontrada." });
+
+    if (nota.Status != "Aberta")
+        return BadRequest(new { mensagem = "Apenas notas com status Aberta podem ser impressas." });
+
+    try
     {
-        var nota = await _context.NotasFiscais
-            .Include(n => n.Itens)
-            .FirstOrDefaultAsync(n => n.Id == id);
-
-        if (nota == null)
-            return NotFound(new { mensagem = "Nota fiscal não encontrada." });
-
-        if (nota.Status != "Aberta")
-            return BadRequest(new { mensagem = "Apenas notas com status Aberta podem ser impressas." });
-
         foreach (var item in nota.Itens)
-        {
-            var sucesso = await _estoqueService.BaixarSaldo(item.ProdutoId, item.Quantidade);
-
-            if (!sucesso)
-                return BadRequest(new { mensagem = $"Falha ao baixar saldo do produto {item.ProdutoId}." });
-        }
+            await _estoqueService.BaixarSaldo(item.ProdutoId, item.Quantidade);
 
         nota.Status = "Fechada";
         await _context.SaveChangesAsync();
 
         return Ok(nota);
     }
+    catch (EstoqueIndisponivelException ex)
+    {
+        return StatusCode(503, new { mensagem = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new { mensagem = ex.Message });
+    }
+}
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletarNota(int id)

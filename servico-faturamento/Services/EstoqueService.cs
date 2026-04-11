@@ -12,14 +12,26 @@ public class EstoqueService
         _httpClient = httpClient;
     }
 
-    public async Task<bool> BaixarSaldo(int produtoId, int quantidade)
+    public async Task BaixarSaldo(int produtoId, int quantidade)
     {
-        var body = JsonSerializer.Serialize(new { quantidade });
-        var content = new StringContent(body, Encoding.UTF8, "application/json");
+        try
+        {
+            var body = JsonSerializer.Serialize(new { quantidade });
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PatchAsync(
-            $"api/produtos/{produtoId}/saldo", content);
+            var response = await _httpClient.PatchAsync(
+                $"api/produtos/{produtoId}/saldo", content);
 
-        return response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                throw new Exception(erro);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            throw new EstoqueIndisponivelException(
+                "O serviço de estoque está indisponível. Tente novamente mais tarde.");
+        }
     }
 }
