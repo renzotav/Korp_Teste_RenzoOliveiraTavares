@@ -23,9 +23,13 @@ export class NotaFiscalService {
     return this.http.post<NotaFiscal>(this.apiUrl, nota);
   }
 
-  imprimir(id: number): Observable<NotaFiscal> {
-    return this.http.post<NotaFiscal>(`${this.apiUrl}/${id}/imprimir`, {});
-  }
+  imprimir(id: number, idempotencyKey: string): Observable<NotaFiscal> {
+  return this.http.post<NotaFiscal>(
+    `${this.apiUrl}/${id}/imprimir`,
+    {},
+    { headers: { 'Idempotency-Key': idempotencyKey } }
+  );
+}
 
   deletar(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);

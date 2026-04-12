@@ -10,6 +10,7 @@ public class FaturamentoDbContext : DbContext
 
     public DbSet<NotaFiscal> NotasFiscais { get; set; }
     public DbSet<ItemNota> ItensNota { get; set; }
+    public DbSet<IdempotencyToken> IdempotencyTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,11 @@ public class FaturamentoDbContext : DbContext
         {
             entity.HasKey(i => i.Id);
             entity.Property(i => i.Quantidade).IsRequired();
+        });
+
+        modelBuilder.Entity<IdempotencyToken>(entity =>
+        {
+            entity.HasKey(i => i.Token);
         });
     }
 }

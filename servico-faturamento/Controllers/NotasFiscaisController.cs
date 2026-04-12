@@ -56,37 +56,62 @@ public class NotasFiscaisController : ControllerBase
     }
 
     [HttpPost("{id}/imprimir")]
-public async Task<IActionResult> Imprimir(int id)
-{
-    var nota = await _context.NotasFiscais
-        .Include(n => n.Itens)
-        .FirstOrDefaultAsync(n => n.Id == id);
-
-    if (nota == null)
-        return NotFound(new { mensagem = "Nota fiscal não encontrada." });
-
-    if (nota.Status != "Aberta")
-        return BadRequest(new { mensagem = "Apenas notas com status Aberta podem ser impressas." });
-
-    try
+    public async Task<IActionResult> Imprimir(int id, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
     {
-        foreach (var item in nota.Itens)
-            await _estoqueService.BaixarSaldo(item.ProdutoId, item.Quantidade);
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            var tokenExistente = await _context.IdempotencyTokens
+                .FirstOrDefaultAsync(t => t.Token == idempotencyKey);
 
-        nota.Status = "Fechada";
-        await _context.SaveChangesAsync();
+            if (tokenExistente != null)
+            {
+                var notaExistente = await _context.NotasFiscais
+                    .Include(n => n.Itens)
+                    .FirstOrDefaultAsync(n => n.Id == tokenExistente.NotaFiscalId);
 
-        return Ok(nota);
+                return Ok(notaExistente);
+            }
+        }
+
+        var nota = await _context.NotasFiscais
+            .Include(n => n.Itens)
+            .FirstOrDefaultAsync(n => n.Id == id);
+
+        if (nota == null)
+            return NotFound(new { mensagem = "Nota fiscal não encontrada." });
+
+        if (nota.Status != "Aberta")
+            return BadRequest(new { mensagem = "Apenas notas com status Aberta podem ser impressas." });
+
+        try
+        {
+            foreach (var item in nota.Itens)
+                await _estoqueService.BaixarSaldo(item.ProdutoId, item.Quantidade);
+
+            nota.Status = "Fechada";
+            await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(idempotencyKey))
+            {
+                _context.IdempotencyTokens.Add(new Models.IdempotencyToken
+                {
+                    Token = idempotencyKey,
+                    NotaFiscalId = nota.Id
+                });
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(nota);
+        }
+        catch (EstoqueIndisponivelException ex)
+        {
+            return StatusCode(503, new { mensagem = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
     }
-    catch (EstoqueIndisponivelException ex)
-    {
-        return StatusCode(503, new { mensagem = ex.Message });
-    }
-    catch (Exception ex)
-    {
-        return BadRequest(new { mensagem = ex.Message });
-    }
-}
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletarNota(int id)

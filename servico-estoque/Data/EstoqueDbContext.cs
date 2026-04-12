@@ -19,6 +19,10 @@ public class EstoqueDbContext : DbContext
             entity.Property(p => p.Codigo).IsRequired().HasMaxLength(20);
             entity.Property(p => p.Descricao).IsRequired().HasMaxLength(200);
             entity.Property(p => p.Saldo).IsRequired();
+            entity.Property(p => p.RowVersion)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .IsRowVersion();
         });
     }
 }

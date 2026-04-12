@@ -40,6 +40,7 @@ export class NotasFiscaisComponent implements OnInit {
   form: FormGroup;
   carregando = false;
   imprimindo: number | null = null;
+  private idempotencyTokens = new Map<number, string>();
 
   constructor(
     private notaService: NotaFiscalService,
@@ -121,12 +122,19 @@ export class NotasFiscaisComponent implements OnInit {
     });
   }
 
-  imprimir(id: number): void {
+ imprimir(id: number): void {
+  if (!this.idempotencyTokens.has(id)) {
+    this.idempotencyTokens.set(id, crypto.randomUUID());
+  }
+
+  const token = this.idempotencyTokens.get(id)!;
   this.imprimindo = id;
-  this.notaService.imprimir(id).subscribe({
+
+  this.notaService.imprimir(id, token).subscribe({
     next: () => {
       this.snackBar.open('Nota impressa e fechada!', 'Fechar', { duration: 3000 });
       this.imprimindo = null;
+      this.idempotencyTokens.delete(id);
       this.carregarNotas();
     },
     error: (err) => {

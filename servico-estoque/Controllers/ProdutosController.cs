@@ -92,22 +92,29 @@ public class ProdutosController : ControllerBase
 
     // PATCH: api/produtos/5/saldo
     // Endpoint especial usado pelo serviço de faturamento para baixar saldo
-    [HttpPatch("{id}/saldo")]
-    public async Task<IActionResult> AtualizarSaldo(int id, [FromBody] AtualizarSaldoRequest request)
+   [HttpPatch("{id}/saldo")]
+public async Task<IActionResult> AtualizarSaldo(int id, [FromBody] AtualizarSaldoRequest request)
+{
+    var produto = await _context.Produtos.FindAsync(id);
+
+    if (produto == null)
+        return NotFound(new { mensagem = "Produto não encontrado." });
+
+    if (produto.Saldo < request.Quantidade)
+        return BadRequest(new { mensagem = $"Saldo insuficiente. Saldo atual: {produto.Saldo}" });
+
+    produto.Saldo -= request.Quantidade;
+
+    try
     {
-        var produto = await _context.Produtos.FindAsync(id);
-
-        if (produto == null)
-            return NotFound(new { mensagem = "Produto não encontrado." });
-
-        if (produto.Saldo < request.Quantidade)
-            return BadRequest(new { mensagem = $"Saldo insuficiente. Saldo atual: {produto.Saldo}" });
-
-        produto.Saldo -= request.Quantidade;
         await _context.SaveChangesAsync();
-
         return Ok(produto);
     }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Conflict(new { mensagem = "Conflito de concorrência detectado. Tente novamente." });
+    }
+}
 }
 
 public record AtualizarSaldoRequest(int Quantidade);
